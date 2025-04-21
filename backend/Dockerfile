@@ -14,13 +14,14 @@ COPY package*.json ./
 RUN npm install
 
 # Copy prisma schema and generate client
-COPY prisma ./prisma/
+COPY prisma/ ./prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
 
 # Copy the rest of the application
-COPY . .
+COPY src/ ./src/
+COPY .env.example ./
 
 # Expose the port the app will run on
 EXPOSE 5000
