@@ -4,17 +4,20 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Debug: List contents before setup
+RUN ls -la
+
 # Copy package files first for better caching
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Debug: List contents before copying
+# Debug: List contents after package install
 RUN ls -la
 
-# Copy all files
-COPY . .
+# Copy backend files
+COPY backend/ .
 
 # Debug: List contents after copying
 RUN ls -la && ls -la prisma/
