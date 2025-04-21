@@ -1,0 +1,514 @@
+// This is a modified version of the Prisma schema to use SQLite instead of PostgreSQL
+// for development purposes
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// User model
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String?
+  firstName             String?
+  lastName              String?
+  profileImageUrl       String?
+  companyName           String?
+  jobTitle              String?
+  phone                 String?
+  isEmailVerified       Boolean   @default(false)
+  emailVerificationToken String?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  lastLoginAt           DateTime?
+  status                String    @default("active")
+  
+  // Relations
+  userRoles             UserRole[]
+  sessions              Session[]
+  organizationUsers     OrganizationUser[]
+  teamUsers             TeamUser[]
+  facebookAccounts      FacebookAccount[]
+  reports               Report[]
+  adCollections         AdCollection[]
+}
+
+// Role model
+model Role {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  isSystem    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  userRoles   UserRole[]
+  rolePermissions RolePermission[]
+}
+
+// Permission model
+model Permission {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  rolePermissions RolePermission[]
+  
+  @@unique([resource, action])
+}
+
+// Role_Permission model
+model RolePermission {
+  roleId        String
+  permissionId  String
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  role          Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission    Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@id([roleId, permissionId])
+}
+
+// User_Role model
+model UserRole {
+  userId      String
+  roleId      String
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  @@id([userId, roleId])
+}
+
+// Session model
+model Session {
+  id          String    @id @default(uuid())
+  userId      String
+  refreshToken String
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Organization model
+model Organization {
+  id          String    @id @default(uuid())
+  name        String
+  logoUrl     String?
+  website     String?
+  industry    String?
+  size        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  organizationUsers OrganizationUser[]
+  teams       Team[]
+  subscriptions Subscription[]
+  invoices    Invoice[]
+}
+
+// Organization_User model
+model OrganizationUser {
+  organizationId String
+  userId        String
+  role          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([organizationId, userId])
+}
+
+// Team model
+model Team {
+  id            String    @id @default(uuid())
+  organizationId String
+  name          String
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teamUsers     TeamUser[]
+}
+
+// Team_User model
+model TeamUser {
+  teamId        String
+  userId        String
+  role          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([teamId, userId])
+}
+
+// Facebook_Account model
+model FacebookAccount {
+  id              String    @id @default(uuid())
+  userId          String
+  facebookUserId  String
+  accessToken     String?
+  tokenExpiresAt  DateTime?
+  refreshToken    String?
+  name            String?
+  email           String?
+  profilePictureUrl String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adAccounts      AdAccount[]
+  
+  @@unique([userId, facebookUserId])
+}
+
+// Ad_Account model
+model AdAccount {
+  id                  String    @id @default(uuid())
+  facebookAccountId   String
+  facebookAdAccountId String
+  name                String?
+  currency            String?
+  timezone            String?
+  businessName        String?
+  businessId          String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  facebookAccount     FacebookAccount @relation(fields: [facebookAccountId], references: [id], onDelete: Cascade)
+  adAccountUsers      AdAccountUser[]
+  campaigns           Campaign[]
+  insights            Insight[]
+  creatives           Creative[]
+  audiences           Audience[]
+  
+  @@unique([facebookAccountId, facebookAdAccountId])
+}
+
+// Ad_Account_User model
+model AdAccountUser {
+  adAccountId     String
+  userId          String
+  permissionLevel String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  adAccount       AdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  
+  @@id([adAccountId, userId])
+}
+
+// Campaign model
+model Campaign {
+  id                  String    @id @default(uuid())
+  adAccountId         String
+  facebookCampaignId  String
+  name                String
+  objective           String?
+  status              String?
+  buyingType          String?
+  specialAdCategories String
+  spendCap            Float?
+  dailyBudget         Float?
+  lifetimeBudget      Float?
+  startTime           DateTime?
+  endTime             DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adAccount           AdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  adSets              AdSet[]
+  
+  @@unique([adAccountId, facebookCampaignId])
+}
+
+// Ad_Set model
+model AdSet {
+  id                  String    @id @default(uuid())
+  campaignId          String
+  facebookAdSetId     String
+  name                String
+  status              String?
+  targeting           String?
+  optimizationGoal    String?
+  billingEvent        String?
+  bidStrategy         String?
+  bidAmount           Float?
+  dailyBudget         Float?
+  lifetimeBudget      Float?
+  startTime           DateTime?
+  endTime             DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  campaign            Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ads                 Ad[]
+  
+  @@unique([campaignId, facebookAdSetId])
+}
+
+// Ad model
+model Ad {
+  id                  String    @id @default(uuid())
+  adSetId             String
+  facebookAdId        String
+  name                String
+  status              String?
+  creativeId          String?
+  trackingSpecs       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adSet               AdSet     @relation(fields: [adSetId], references: [id], onDelete: Cascade)
+  
+  @@unique([adSetId, facebookAdId])
+}
+
+// Creative model
+model Creative {
+  id                  String    @id @default(uuid())
+  adAccountId         String
+  facebookCreativeId  String?
+  name                String
+  objectStorySpec     String?
+  imageUrl            String?
+  videoId             String?
+  title               String?
+  body                String?
+  callToActionType    String?
+  linkUrl             String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adAccount           AdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+}
+
+// Audience model
+model Audience {
+  id                  String    @id @default(uuid())
+  adAccountId         String
+  facebookAudienceId  String?
+  name                String
+  description         String?
+  audienceType        String?
+  subtype             String?
+  rule                String?
+  approximateCount    Int?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adAccount           AdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+}
+
+// Insight model
+model Insight {
+  id                  String    @id @default(uuid())
+  adAccountId         String
+  objectId            String
+  objectType          String
+  date                DateTime
+  data                String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adAccount           AdAccount @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  
+  @@unique([objectId, objectType, date])
+}
+
+// Report model
+model Report {
+  id                  String    @id @default(uuid())
+  userId              String
+  name                String
+  description         String?
+  type                String
+  parameters          String
+  scheduleType        String?
+  scheduleConfig      String?
+  lastGeneratedAt     DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reportExports       ReportExport[]
+}
+
+// Report_Export model
+model ReportExport {
+  id                  String    @id @default(uuid())
+  reportId            String
+  userId              String?
+  fileUrl             String
+  fileType            String
+  status              String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  report              Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+// Ad_Library_Item model
+model AdLibraryItem {
+  id                  String    @id @default(uuid())
+  facebookAdId        String    @unique
+  adAccountId         String?
+  pageId              String
+  pageName            String
+  content             String
+  startDate           DateTime?
+  endDate             DateTime?
+  status              String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  adCollectionItems   AdCollectionItem[]
+}
+
+// Ad_Collection model
+model AdCollection {
+  id                  String    @id @default(uuid())
+  userId              String
+  name                String
+  description         String?
+  isPublic            Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adCollectionItems   AdCollectionItem[]
+}
+
+// Ad_Collection_Item model
+model AdCollectionItem {
+  collectionId        String
+  adLibraryItemId     String
+  notes               String?
+  createdAt           DateTime  @default(now())
+  
+  // Relations
+  collection          AdCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  adLibraryItem       AdLibraryItem @relation(fields: [adLibraryItemId], references: [id], onDelete: Cascade)
+  
+  @@id([collectionId, adLibraryItemId])
+}
+
+// Subscription_Plan model
+model SubscriptionPlan {
+  id                  String    @id @default(uuid())
+  name                String
+  description         String?
+  priceMonthly        Float
+  priceYearly         Float
+  currency            String    @default("USD")
+  features            String?
+  limits              String?
+  stripePriceIdMonthly String?
+  stripePriceIdYearly String?
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  subscriptions       Subscription[]
+}
+
+// Subscription model
+model Subscription {
+  id                  String    @id @default(uuid())
+  organizationId      String
+  planId              String
+  status              String
+  billingCycle        String
+  currentPeriodStart  DateTime
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean   @default(false)
+  stripeSubscriptionId String?
+  stripeCustomerId    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                SubscriptionPlan @relation(fields: [planId], references: [id])
+  invoices            Invoice[]
+}
+
+// Invoice model
+model Invoice {
+  id                  String    @id @default(uuid())
+  subscriptionId      String?
+  organizationId      String
+  amount              Float
+  currency            String    @default("USD")
+  status              String
+  stripeInvoiceId     String?
+  stripePaymentIntentId String?
+  invoicePdfUrl       String?
+  billingReason       String?
+  invoiceDate         DateTime
+  dueDate             DateTime?
+  paidDate            DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  // Relations
+  subscription        Subscription? @relation(fields: [subscriptionId], references: [id])
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// Payment_Method model
+model PaymentMethod {
+  id                  String    @id @default(uuid())
+  organizationId      String
+  type                String
+  details             String
+  isDefault           Boolean   @default(false)
+  stripePaymentMethodId String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
