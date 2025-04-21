@@ -4,14 +4,14 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy package files first for better caching
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy all files
-COPY . .
+# Copy frontend files
+COPY frontend/ ./
 
 # Build the Next.js application
 RUN npm run build
