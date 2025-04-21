@@ -8,13 +8,13 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy prisma schema
-COPY prisma ./prisma/
+COPY backend/prisma ./prisma/
 
 # Set environment variables for Prisma
 ENV DATABASE_URL="postgresql://Mohammed:Dubai@1214@two84gg48w48k0884kc4g4ok:5432/fb_ads_analytics"
@@ -24,7 +24,8 @@ ENV NODE_ENV="production"
 RUN npx prisma generate
 
 # Copy the rest of the application
-COPY . .
+COPY backend/src ./src/
+COPY backend/.env.example ./.env
 
 # Expose the port the app will run on
 EXPOSE 5000
