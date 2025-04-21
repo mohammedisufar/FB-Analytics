@@ -13,16 +13,18 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all application files
-COPY . .
+# Copy prisma schema
+COPY prisma ./prisma/
 
 # Set environment variables for Prisma
-ENV PRISMA_SCHEMA_ENGINE_BINARY=/app/node_modules/@prisma/engines/schema-engine-linux-musl-openssl-3.0.x
-ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/@prisma/engines/libquery_engine-linux-musl-openssl-3.0.x.so.node
-ENV PRISMA_CLI_QUERY_ENGINE_TYPE=binary
+ENV DATABASE_URL="postgresql://Mohammed:Dubai@1214@two84gg48w48k0884kc4g4ok:5432/fb_ads_analytics"
+ENV NODE_ENV="production"
 
 # Generate Prisma client
 RUN npx prisma generate
+
+# Copy the rest of the application
+COPY . .
 
 # Expose the port the app will run on
 EXPOSE 5000
