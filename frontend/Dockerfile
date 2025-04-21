@@ -10,6 +10,9 @@ COPY frontend/package*.json ./
 # Install dependencies
 RUN npm install
 
+# Create public directory if it doesn't exist
+RUN mkdir -p public
+
 # Copy frontend files
 COPY frontend/ ./
 
@@ -24,9 +27,11 @@ WORKDIR /app
 # Set to production environment
 ENV NODE_ENV=production
 
+# Create public directory
+RUN mkdir -p public
+
 # Copy necessary files from builder stage
 COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
