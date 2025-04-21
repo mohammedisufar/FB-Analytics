@@ -10,8 +10,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all files first
+# Debug: List contents before copying
+RUN ls -la
+
+# Copy all files
 COPY . .
+
+# Debug: List contents after copying
+RUN ls -la && ls -la prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
