@@ -1,6 +1,9 @@
 # Backend Dockerfile
 FROM node:20-alpine
 
+# Install OpenSSL
+RUN apk add --no-cache openssl
+
 # Set working directory
 WORKDIR /app
 
@@ -22,8 +25,8 @@ COPY backend/ .
 # Debug: List contents after copying
 RUN ls -la && ls -la prisma/
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma client with explicit schema path
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Expose the port the app will run on
 EXPOSE 5000
