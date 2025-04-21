@@ -10,12 +10,11 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy prisma schema and generate client
-COPY prisma ./prisma/
-RUN npx prisma generate
-
-# Copy the rest of the application
+# Copy all files first
 COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Expose the port the app will run on
 EXPOSE 5000
